@@ -223,11 +223,96 @@ main:
 
     mov     rcx, qword [msg+MSG.wParam]
     call    ExitProcess
+WndProc:
+    cmp     edx, WM_CREATE
+    je      .wm_create
+    cmp     edx, WM_PAINT
+    je      .wm_paint
+    cmp     edx, WM_CLOSE
+    je      .wm_close
+    cmp     edx, WM_DESTROY
+    je      .wm_destroy
+.default_proc:
+    call    DefWindowProcA
+    ret
+.wm_create:
+    mov     rcx, [hWnd]
+    call    GetDC
+    mov     rbx, rax
 
+    mov     rcx, rbx
+    call    CreateCompatibleDC
+    mov     [hMemDC], rax
 
+    mov     rcx, rbx
+    mov     edx, W_WIDTH
+    mov     r8d, W_HEIGHT
+    call    CreateCompatibleBitmap
+    mov     [hBitmap], rax
 
+    mov     rcx, [hMemDC]
+    mov     rdx, [hBitmap]
+    call    SelectObject
+    mov     [hOldbitmap], rax
 
+    xor     ecx, ecx
+    call    CreateSolidBrush
+    mov     [hBlackBrush], rax
 
+    mov     rcx, [hWnd]
+    mov     rdx, rbx
+    call    ReleaseDC
+    xor     eax, eax
+    ret
+.wm_paint:
+    lea     rcx, [ps]
+    mov     rdx, [hWnd]
+    call    BeginPaint
+    lea     rcx, [ps]
+    mov     rdx, [hWnd]
+    call    EndPaint
+    xor     eax, eax
+    ret
+.wm_close:
+    mov     rcx, [hWnd]
+    call    DestroyWindow
+    xor     eax, eax
+    ret
+.wm_destroy:
+    xor     rcx, rcx
+    call    PostQuitMessage
+    xor     eax, eax
+    ret
 
+;Pseudo random num generator using LCG(returns 32bit int)
+my_rand:
+    mov     eax, [rand_seed]
+    mov     ecx, 214013
+    mul     ecx
+    add     eax, 2531011
+    mov     [rand_seed], eax
+    shr     eax, 16
+    ret
+;random float between -1.0 & 1.0, result in st0
+rand_float:
+    call        my_rand
+    cvtsi2ss    xmm0, eax
+    movd        eax, xmm0
+    push        rax
+    fld         dword [rsp]
+    pop         rax
 
+    fild        word [rel my_rand.max_val]
+    fdivp       st1, st0
+    fld1
+    fsubp       st1, st0
+    fadd        st0, st0
+    fld1
+    faddp       st1, st0
+    ret
+.max_val: dw 32767
+
+init_stars:
+    mov     r12, NUM_STARS
+    lea     r13, [stars]
 
