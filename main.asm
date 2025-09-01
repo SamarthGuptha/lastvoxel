@@ -210,9 +210,20 @@ main:
 .render_frame:
     call    draw_scene
     jmp     .animation_loop
-.exit_loop
-    mov rcx, [hMemDC]
-    mov
+.exit_loop:
+    mov     rcx, [hMemDC]
+    mov     rdx, [hOldBitmap]
+    call    SelectObject
+    mov     rcx, [hBitmap]
+    call    DeleteObject
+    mov     rcx, [hMemDC]
+    call    DeleteDC
+    mov     rcx, [hBlackBrush]
+    call    DeleteObject
+
+    mov     rcx, qword [msg+MSG.wParam]
+    call    ExitProcess
+
 
 
 
